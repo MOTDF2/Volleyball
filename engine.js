@@ -169,5 +169,5 @@ function proj(x,y,z){const m=VPm,X=m[0]*x+m[4]*y+m[8]*z+m[12],Y=m[1]*x+m[5]*y+m[
 function billboard(n,eye){const dx=eye[0]-n.p[0],dy=eye[1]-n.p[1],dz=eye[2]-n.p[2],l=Math.hypot(dx,dy,dz)||1;n.r=[Math.acos(clamp(dy/l,-1,1)),Math.atan2(dx,dz),0];}
 let RES=1.75;
 function resize(){const r=cv.getBoundingClientRect();if(!r.width)return;const d=Math.min(window.devicePixelRatio||1,RES);
-  cv.width=Math.round(r.width*d);cv.height=Math.round(r.height*d);$('hud').style.fontSize=(r.width/62)+'px';}
+  const h=Math.round(r.width*9/16);cv.style.height=h+'px';$('hud').style.height=h+'px';cv.width=Math.round(r.width*d);cv.height=Math.round(h*d);$('hud').style.fontSize=(r.width/62)+'px';}
 resize();addEventListener('resize',resize);if(window.ResizeObserver)new ResizeObserver(resize).observe(cv);
