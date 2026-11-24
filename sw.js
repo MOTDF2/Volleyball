@@ -1,6 +1,6 @@
 // Service Worker: Spiel offline verfügbar machen
 // Bei jeder neuen Version CACHE_NAME hochzählen.
-const CACHE_NAME = 'bombenvb-v2';
+const CACHE_NAME = 'bombenvb-v3';
 const FILES = ['./', './index.html', './engine.js', './world.js', './game.js', './ui.js', './manifest.json', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(FILES)));

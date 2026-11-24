@@ -168,6 +168,14 @@ function proj(x,y,z){const m=VPm,X=m[0]*x+m[4]*y+m[8]*z+m[12],Y=m[1]*x+m[5]*y+m[
   return[(X/W*.5+.5)*cv.clientWidth,(-Y/W*.5+.5)*cv.clientHeight,W>0];}
 function billboard(n,eye){const dx=eye[0]-n.p[0],dy=eye[1]-n.p[1],dz=eye[2]-n.p[2],l=Math.hypot(dx,dy,dz)||1;n.r=[Math.acos(clamp(dy/l,-1,1)),Math.atan2(dx,dz),0];}
 let RES=1.75;
-function resize(){const r=cv.getBoundingClientRect();if(!r.width)return;const d=Math.min(window.devicePixelRatio||1,RES);
+// Echte Bildschirmhöhe: als Home-Bildschirm-App auf dem iPhone ist window.innerHeight unzuverlässig,
+// darum dort die Bildschirmmasse verwenden (Statusleiste liegt mit black-translucent über der App).
+function isStandalone(){return window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);}
+function fitApp(){const app=$('app'),stage=$('stage');let w=window.innerWidth,h=window.innerHeight;
+  if(isStandalone()&&window.screen&&screen.width){const land=w>h;const a=Math.max(screen.width,screen.height),b=Math.min(screen.width,screen.height);h=land?b:a;w=land?a:b;}
+  app.style.height=h+'px';const cs=getComputedStyle(app);
+  const pl=parseFloat(cs.paddingLeft)||0,pr=parseFloat(cs.paddingRight)||0,pt=parseFloat(cs.paddingTop)||0,pb=parseFloat(cs.paddingBottom)||0;
+  const aw=w-pl-pr,ah=h-pt-pb;const sw=aw>ah?Math.min(aw,ah*16/9):aw;stage.style.width=Math.floor(sw)+'px';}
+function resize(){fitApp();const r=cv.getBoundingClientRect();if(!r.width)return;const d=Math.min(window.devicePixelRatio||1,RES);
   const h=Math.round(r.width*9/16);cv.style.height=h+'px';$('hud').style.height=h+'px';cv.width=Math.round(r.width*d);cv.height=Math.round(h*d);$('hud').style.fontSize=(r.width/62)+'px';}
-resize();addEventListener('resize',resize);if(window.ResizeObserver)new ResizeObserver(resize).observe(cv);
+resize();addEventListener('resize',resize);addEventListener('orientationchange',()=>{setTimeout(resize,250);setTimeout(resize,700);});if(window.ResizeObserver)new ResizeObserver(resize).observe(cv);

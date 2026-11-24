@@ -51,14 +51,14 @@ $('stage').addEventListener('pointerdown',()=>{if(state==='replay')endReplay();}
 
 // ================= Menü =================
 let curTab='play';
-function openMenu(tab){state='menu';document.body.classList.add('inmenu');paused=false;$('over').classList.add('hidden');$('menu').classList.remove('hidden');$('vs').classList.remove('show');$('tutBox').classList.remove('show');
+function openMenu(tab){state='menu';document.body.classList.add('inmenu');window.scrollTo(0,0);paused=false;$('over').classList.add('hidden');$('menu').classList.remove('hidden');$('vs').classList.remove('show');$('tutBox').classList.remove('show');
   $('replayTag').classList.remove('show');$('msg').classList.remove('show');
   clearBombs();clearPU();setWave(9);wave.on=false;gull.vis=false;gullObj.active=false;rp=null;replayPend=false;
   if(mode==='2p'||A.boss||mode==='surv'||mode==='tut'){mode='free';setOpponent(FREE_OPP[sel.diff]);}
   for(const c of[P,A]){c.cheerT=0;c.root.vis=true;c.ko=null;c.jump=null;c.jumpY=0;c.hurt=0;c.x=c.side*4.5;c.z=0;c.root.r=[0,0,0];c.shield=false;c.turbo=0;c.slow=0;c.iceT=0;}
   weather='sonne';windZ=0;windStr=0;setEnv(sel.arena,'sonne',prof().look.island);mTrans=ARENAS[sel.arena].trans;
   setControlsMode(false);showTab(tab||curTab);}
-function showTab(t){curTab=t;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('sel',b.dataset.t===t));
+function showTab(t){curTab=t;window.scrollTo(0,0);document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('sel',b.dataset.t===t));
   document.querySelectorAll('.tabp').forEach(s=>s.hidden=s.id!=='t-'+t);
   menuFocus=t==='figur'||t==='shop';$('menu').classList.toggle('side',menuFocus);refreshMenu();}
 document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.t)));
