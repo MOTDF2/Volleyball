@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Bomben-Volleyball 3D</title>
+<meta name="theme-color" content="#073b57">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* VOICE: verspieltes Insel-Arcade-Spiel in 3D
+   IDEA: Strand-Turnier auf einer Tropeninsel, Bombe statt Ball, vom Mittag bis in die Fackelnacht
+   PICTURE: das 3D-Spielfeld selbst – Insel, Lagune, Palmen, Netz, Figuren, Zuschauer
+   COLOUR: Lagunentürkis, Sandgelb, Bomben-Orange als Akzent
+   TYPE: Lilita One + Nunito; LAYOUT: Spiel oben, Joystick und Aktionstasten darunter bzw. darüber im Querformat */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;min-width:0}
+html,body{background:#073b57;font-family:Nunito,system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+#stage,#controls,.joy,.ctl{touch-action:none}
+#app{position:fixed;top:0;right:0;bottom:0;left:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#stage{position:relative;width:100vw}
+#c{display:block;width:100%;aspect-ratio:16/9;background:#8fd6f7}
+#hud{position:absolute;left:0;top:0;width:100%;aspect-ratio:16/9;pointer-events:none;overflow:hidden;font-size:14px}
+.pan{position:absolute;top:1.6%;background:rgba(2,40,66,.55);border-radius:.9em;padding:.45em .9em .5em;min-width:13em}
+.pan.L{left:1.2%}.pan.R{right:1.2%;text-align:right}
+.pan b{font:400 1.35em "Lilita One",system-ui,sans-serif;vertical-align:middle;margin-right:.3em;text-transform:uppercase}
+.pan.L b{color:#90caf9}.pan.R b{color:#ef9a9a;margin:0 0 0 .3em}
+.hearts{display:inline-flex;gap:.2em;vertical-align:middle}
+.hearts svg{width:1.4em;height:1.4em;fill:#ff3b5c}.hearts svg.lost{fill:rgba(255,255,255,.22)}
+.pan>div{font-weight:800;font-size:1.05em;margin-top:.15em}
+.fx{font-size:.95em;min-height:1.2em}
+.mega{position:relative;height:1.15em;border-radius:.6em;background:rgba(0,0,0,.4);overflow:hidden;margin-top:.3em}
+.mega i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#ffb300,#ff3d00)}
+.pan.R .mega i{left:auto;right:0}
+.mega span{position:relative;font-size:.8em;font-weight:800;display:block;text-align:center;line-height:1.45em}
+.mega.ready{animation:glow .6s infinite alternate}
+@keyframes glow{from{box-shadow:0 0 .2em #ffeb3b}to{box-shadow:0 0 1em #ffeb3b}}
+#mid{position:absolute;top:12.5%;left:50%;transform:translateX(-50%);background:rgba(2,40,66,.45);border-radius:1em;padding:.2em .9em;font-weight:800;font-size:.95em;white-space:nowrap}
+#msg{position:absolute;top:27%;left:0;right:0;text-align:center;opacity:0;transition:opacity .25s}
+#msg.show{opacity:1}
+#m1{font:400 3.2em/1.05 "Lilita One",system-ui,sans-serif;-webkit-text-stroke:.07em rgba(0,0,0,.6);paint-order:stroke fill;text-shadow:0 .08em .2em rgba(0,0,0,.35)}
+#m2{font-weight:800;font-size:1.45em;margin-top:.3em;text-shadow:0 0 .3em #000,0 0 .15em #000}
+#msg.pop #m1{animation:pop .45s ease-out}
+@keyframes pop{0%{transform:scale(1.6)}100%{transform:scale(1)}}
+#toast{position:absolute;top:47%;left:50%;transform:translateX(-50%);background:rgba(2,40,66,.75);border-radius:1em;padding:.3em 1em;font-weight:800;font-size:1.15em;opacity:0;transition:opacity .25s;max-width:90%;text-align:center}
+#toast.show{opacity:1}
+#bubble{position:absolute;transform:translate(-50%,-100%);background:#fff;color:#3b2a12;font-weight:800;font-size:1.05em;padding:.35em .8em;border-radius:1em;opacity:0;transition:opacity .2s;white-space:nowrap}
+#bubble::after{content:'';position:absolute;left:50%;bottom:-.45em;margin-left:-.45em;border:.45em solid transparent;border-top-color:#fff;border-bottom:0}
+#bubble.show{opacity:1}
+#tutBox{position:absolute;top:19%;left:50%;transform:translateX(-50%);background:rgba(255,247,227,.95);color:#3b2a12;border:.2em solid #ffb74d;border-radius:1em;padding:.5em 1.1em;font-weight:800;font-size:1.25em;text-align:center;display:none;max-width:80%}
+#tutBox small{display:block;font-size:.65em;color:#0277bd}
+#tutBox.show{display:block}
+#replayTag{position:absolute;top:15%;left:50%;transform:translateX(-50%);display:none;font:400 1.6em "Lilita One",system-ui,sans-serif;color:#ff5252;background:rgba(0,0,0,.55);padding:.15em .8em;border-radius:.6em}
+#replayTag small{font:800 .45em Nunito,system-ui,sans-serif;color:#fff;margin-left:.6em}
+#replayTag.show{display:block;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.6}}
+#vs{position:absolute;top:0;right:0;bottom:0;left:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:linear-gradient(90deg,rgba(30,136,229,0),rgba(2,30,50,.55) 30%,rgba(2,30,50,.55) 70%,rgba(229,57,53,0))}
+#vs.show{display:flex;animation:vsIn .5s ease-out}
+@keyframes vsIn{0%{opacity:0;transform:scale(1.15)}100%{opacity:1;transform:none}}
+#vs .r{font-weight:800;font-size:1.3em;color:#ffe082;text-shadow:0 0 .3em #000}
+#vs .n{font:400 3.6em/1.05 "Lilita One",system-ui,sans-serif;-webkit-text-stroke:.07em rgba(0,0,0,.6);paint-order:stroke fill}
+#vs .n span{color:#ff8a65;font-size:.6em;margin:0 .35em}
+#vs .a{font-weight:800;font-size:1.15em;margin-top:.3em;text-shadow:0 0 .3em #000}
+.charge{position:absolute;width:6em;height:.8em;border-radius:.5em;background:rgba(0,0,0,.5);transform:translate(-50%,-50%);display:none;padding:.12em}
+.charge i{display:block;height:100%;border-radius:.4em;background:linear-gradient(90deg,#66bb6a,#ffca28 60%,#e53935);width:0}
+.charge span{position:absolute;bottom:1.1em;left:0;right:0;text-align:center;font-weight:800;font-size:.85em;text-shadow:0 0 .3em #000}
+.fuse{position:absolute;width:2.6em;height:2.6em;transform:translate(-50%,-50%);display:none}
+.fuse circle{fill:none;stroke-width:4}
+.pu{position:absolute;transform:translate(-50%,-100%);font-size:1.6em;filter:drop-shadow(0 0 .2em rgba(0,0,0,.6))}
+#flash{position:absolute;top:0;right:0;bottom:0;left:0;background:#fff3d6;opacity:0}
+#pauseTxt{position:absolute;top:0;right:0;bottom:0;left:0;display:none;align-items:center;justify-content:center;flex-direction:column;background:rgba(0,0,0,.45);font:400 3.4em "Lilita One",system-ui,sans-serif}
+#pauseTxt small{font:800 .35em Nunito,system-ui,sans-serif}
+#top{position:absolute;top:1.5%;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:3}
+#top button{width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(0,40,70,.5);color:#fff;font-size:15px}
+#top button.off{opacity:.45}
+/* Steuerung */
+#controls{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;padding:10px 14px 6px;width:100%}
+.pc{display:flex;align-items:flex-end;gap:10px}
+#controls.one #pc1{flex:1;justify-content:space-between}#controls.one #pc2{display:none}
+.joy{position:relative;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle,rgba(0,40,70,.35) 40%,rgba(0,40,70,.65));border:3px solid rgba(255,255,255,.65);touch-action:none;flex:none}
+.joy::before{content:'';position:absolute;top:22%;right:22%;bottom:22%;left:22%;border-radius:50%;border:2px dashed rgba(255,255,255,.3)}
+.knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 35% 30%,#fff,#ffb74d 55%,#e65100);box-shadow:0 4px 10px rgba(0,0,0,.45);transition:transform .12s}
+#joy2 .knob{background:radial-gradient(circle at 35% 30%,#fff,#ffcc80 55%,#ef6c00)}
+.joy.on .knob{transition:none}.joy.on{border-color:#ffb74d}
+.acts{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+#pc2 .acts{align-items:flex-start}
+.ctl{border-radius:14px;border:3px solid rgba(255,255,255,.75);background:rgba(0,40,70,.6);color:#fff;font:800 16px Nunito,system-ui,sans-serif;touch-action:none;position:relative;overflow:hidden}
+.ctl.on{background:rgba(255,140,0,.85)}
+.ctl span{position:relative}
+.ctl i{position:absolute;left:0;bottom:0;width:100%;height:0;background:rgba(0,0,0,.45);pointer-events:none}
+.ctl.throw{min-width:140px;height:72px;border-radius:40px;font-size:20px;padding:0 18px}
+.ctl.dive,.ctl.mg{min-width:112px;height:44px;border-radius:30px;font-size:15px;padding:0 12px}
+.ctl.mg{opacity:.5}.ctl.mg.ready{opacity:1;border-color:#ffeb3b;background:rgba(255,61,0,.75);animation:glow .6s infinite alternate}
+#controls.two .ctl.throw{min-width:100px;height:56px;font-size:16px}
+#controls.two .ctl.dive,#controls.two .ctl.mg{min-width:90px;height:38px;font-size:13px}
+#controls.two .joy{width:112px;height:112px}
+#hint{font-size:13px;opacity:.75;text-align:center;padding:4px 10px}
+#kb{display:none;position:fixed;left:0;right:0;bottom:0;font-size:12px;opacity:.7;text-align:center;padding:4px;pointer-events:none}
+@media (orientation:landscape){
+  #controls{position:absolute;left:0;bottom:0;padding:8px 12px;pointer-events:none}
+  #controls .ctl,#controls .joy{pointer-events:auto;opacity:.88}
+  .joy{width:116px;height:116px}.knob{width:48px;height:48px;margin:-24px 0 0 -24px}
+  .acts{gap:5px}
+  #controls .ctl.throw{min-width:116px;height:56px;font-size:17px}
+  #controls .ctl.dive,#controls .ctl.mg{min-width:96px;height:38px;font-size:13px}
+  #controls .ctl.mg:not(.ready){opacity:.45}
+  #controls.two .joy{width:100px;height:100px}
+  #controls.two .ctl.throw{min-width:88px;height:48px;font-size:14px}
+  #controls.two .ctl.dive,#controls.two .ctl.mg{min-width:80px;height:32px;font-size:12px}
+  #hint{display:none}}
+@media (orientation:portrait){#top button{width:28px;height:28px;font-size:12px;border-width:1.5px}#mid{top:17%}}
+@media (orientation:portrait){#controls.two .pc{flex-direction:column;align-items:center;gap:8px;flex:1}
+  #controls.two #pc2 .joy{order:-1}
+  #controls.two .acts{flex-direction:row;flex-wrap:wrap;justify-content:center;gap:5px;align-items:center}
+  #controls.two .ctl.throw,#controls.two .ctl.dive,#controls.two .ctl.mg{min-width:0;height:42px;padding:0 10px;font-size:13px;white-space:nowrap}
+  #controls.two .joy{width:108px;height:108px}}
+@media (hover:hover) and (pointer:fine){#controls.one{display:none}#hint{display:none}#kb{display:block}}
+/* Menüs */
+.ov{position:fixed;top:0;right:0;bottom:0;left:0;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;background:rgba(3,30,50,.55);z-index:10;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+.ov.hidden{display:none}
+.ov.side{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;justify-content:flex-end}
+.panel{background:#fff7e3;color:#3b2a12;border-radius:20px;padding:14px 16px;width:min(520px,100%);margin:auto;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.4);border:4px solid #ffb74d}
+.ov.side .panel{width:min(440px,54vw);margin:auto 0 auto auto}
+@media (orientation:portrait){.ov.side{align-items:flex-end}.ov.side .panel{width:100%;max-height:56vh;overflow:auto;margin:auto 0 0 0}}
+.panel h1{font:400 clamp(24px,5.5vw,36px)/1.05 "Lilita One",system-ui,sans-serif;color:#e65100}
+.panel h2{font:400 19px "Lilita One",system-ui,sans-serif;color:#0277bd;margin:12px 0 4px}
+.mhead{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:8px}
+.chip{border:0;border-radius:20px;background:#ffe0b2;color:#6d4c1f;font:800 14px Nunito,system-ui,sans-serif;padding:6px 12px;min-height:36px;cursor:pointer}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin:0 -6px 8px;padding:0 6px 4px;scrollbar-width:none}
+.tabs button{flex:none;border:0;border-radius:12px;background:#ffe0b2;color:#6d4c1f;font:800 14px Nunito,system-ui,sans-serif;padding:8px 11px;min-height:40px;cursor:pointer}
+.tabs button.sel{background:#e65100;color:#fff}
+.row{display:flex;gap:6px;justify-content:center;margin:5px 0;flex-wrap:wrap}
+.row button,.btn,.ob{font:800 15px Nunito,system-ui,sans-serif;border:0;border-radius:12px;padding:8px 12px;min-height:42px;cursor:pointer}
+.row button,.ob{background:#ffe0b2;color:#6d4c1f}
+.row button.sel,.ob.sel{background:#0277bd;color:#fff}
+.ob:disabled{opacity:.6;cursor:default}.ob.buy{background:#2e7d32;color:#fff}
+.btn{background:#ff6d00;color:#fff;font-size:19px;padding:11px 24px;margin:3px}
+.btn.alt{background:#0277bd;font-size:16px}
+.btn.big{width:100%;max-width:360px;font-size:20px;box-shadow:0 4px 0 #bf4a00}
+.btn.tour{background:linear-gradient(180deg,#ffb300,#ff6d00)}
+.btn.surv{background:linear-gradient(180deg,#ef5350,#b71c1c);box-shadow:0 4px 0 #7f0000}
+.btn.two{background:linear-gradient(180deg,#26a69a,#00695c);box-shadow:0 4px 0 #004d40}
+.small{font-size:13.5px;font-weight:700;color:#6d4c1f;margin:3px 0}
+.opps{display:flex;justify-content:center;gap:5px;margin:5px 0 2px;font-size:12.5px;font-weight:800;flex-wrap:wrap}
+.opps span{background:#ffecc7;border-radius:10px;padding:4px 7px}.opps span.done{background:#c8e6c9}
+#diffInfo{font-size:13.5px;font-weight:700;color:#6d4c1f;margin:2px 0 4px;min-height:2.6em}
+.checks{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
+.check{display:inline-flex;align-items:center;gap:7px;font-weight:800;font-size:14.5px;min-height:40px}
+.check input{width:21px;height:21px;accent-color:#0277bd}
+.callout{background:#c8e6c9;border-radius:12px;padding:8px 10px;margin:6px 0;font-weight:800}
+details.help{text-align:left;font-size:14px;line-height:1.45;margin-top:10px;background:#ffecc7;border-radius:12px;padding:9px 12px}
+details.help summary{font-weight:800;cursor:pointer;min-height:28px}
+details.help li{margin-left:18px;margin-top:4px}
+.frow{display:flex;align-items:center;gap:8px;margin:7px 0;text-align:left}
+.frow b{width:76px;flex:none;font-size:14px}
+.frow>div{display:flex;flex-wrap:wrap;gap:6px}
+.sw{width:38px;height:38px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #c9a56b;cursor:pointer}
+.sw.sel{box-shadow:0 0 0 3px #0277bd}
+.frow .ob{min-height:38px;padding:6px 10px;font-size:13.5px}
+.hint{font-size:13px;color:#6d4c1f;margin-top:8px}
+.item{display:flex;align-items:center;gap:10px;background:#ffecc7;border-radius:12px;padding:7px 10px;margin:6px 0;text-align:left}
+.item .ic{font-size:26px}.item .nm{flex:1;font-weight:800}
+#missList{list-style:none;text-align:left}
+#missList li{display:flex;gap:8px;align-items:flex-start;padding:7px 4px;border-bottom:1px solid #f0dcb4;font-weight:700;font-size:14.5px}
+#missList li span{flex:none}#missList li.done{color:#2e7d32}
+#board table{width:100%;border-collapse:collapse;font-size:13.5px}
+#board th,#board td{padding:6px 4px;border-bottom:1px solid #f0dcb4;text-align:right}
+#board th:first-child,#board td:first-child{text-align:left;font-weight:800}
+#board tr.me{background:#fff0c2}
+#board .ob{min-height:34px;padding:4px 8px;font-size:12.5px}
+.scroll{overflow-x:auto}
+.inrow{display:flex;gap:6px;margin:8px 0}
+.inrow input{flex:1;font:700 16px Nunito,system-ui,sans-serif;padding:8px 10px;border-radius:10px;border:2px solid #e0c28e;min-height:42px;background:#fff}
+.optl{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}
+.stats{font-size:13.5px;margin-top:8px;color:#6d4c1f;font-weight:800}
+.big{font:400 21px "Lilita One",system-ui,sans-serif;margin:6px 0 4px;color:#3b2a12}
+.reward{font-weight:800;color:#2e7d32;margin-bottom:8px;min-height:1.2em}
+#nogl{z-index:30}
+body.inmenu #controls,body.inmenu #mid{visibility:hidden}
+.ov.side .mhead h1{display:none}
+/* iPhone-Home-Bildschirm: Spiel fix im Hintergrund, Menüs scrollen als normale Seite */
+html{height:100%}
+body{min-height:100%;overflow:hidden}
+body.inmenu{overflow-x:hidden;overflow-y:auto;height:auto}
+body.inmenu #app{pointer-events:none}
+#menu.ov,#over.ov{position:relative;top:auto;right:auto;bottom:auto;left:auto;display:block;min-height:100vh;overflow:visible;background:rgba(3,30,50,.6);backdrop-filter:none;-webkit-backdrop-filter:none;
+  padding:calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 24px) calc(env(safe-area-inset-left) + 12px)}
+#menu.ov.hidden,#over.ov.hidden{display:none}
+#menu .panel,#over .panel{margin:0 auto}
+#over .panel{margin-top:12vh}
+#menu.side{background:transparent}
+#menu.side .panel{margin:0 0 0 auto;width:min(440px,54vw)}
+@media (orientation:portrait){#menu.side{padding-top:52vh}#menu.side .panel{width:100%;max-height:none;overflow:visible;margin:0}}
+
+</style>
+</head>
+<body>
+<div id="errBox" style="display:none;position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top) + 8px);z-index:99;background:#b71c1c;color:#fff;font:14px system-ui,sans-serif;padding:10px;border-radius:10px;white-space:pre-wrap"></div>
+<script>window.addEventListener('error',function(e){var b=document.getElementById('errBox'),t=e.target;b.style.display='block';
+if(t&&t.src&&t!==window){b.textContent+='Datei fehlt oder lädt nicht: '+t.src.split('/').pop()+'\n';return;}
+b.textContent+='Fehler: '+(e.message||'?')+' ('+String(e.filename||'').split('/').pop()+':'+(e.lineno||'')+')\n';},true);
+window.addEventListener('load',function(){if(typeof openMenu!=='function'){var b=document.getElementById('errBox');b.style.display='block';b.textContent+='Das Spiel konnte nicht starten – bitte prüfen, ob alle Dateien (engine.js, world.js, game.js, ui.js) im selben Ordner wie index.html liegen.\n';}});</script>
+<div id="app">
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <div id="hud">
+      <div class="pan L"><b id="nameP">DU</b><span class="hearts" id="hP"></span><div>Treffer gelandet: <span id="tP">0</span></div><div class="mega" id="megaP"><i></i><span></span></div><div class="fx" id="fxP"></div></div>
+      <div class="pan R"><span class="hearts" id="hA"></span><b id="nameA">GEGNER</b><div>Treffer gelandet: <span id="tA">0</span></div><div class="mega" id="megaA"><i></i><span></span></div><div class="fx" id="fxA"></div></div>
+      <div id="mid"></div>
+      <div id="tutBox"></div>
+      <div id="msg"><div id="m1"></div><div id="m2"></div></div>
+      <div id="toast"></div>
+      <div id="bubble"></div>
+      <div id="replayTag">WIEDERHOLUNG<small>Tippen zum Überspringen</small></div>
+      <div id="vs"><div class="r" id="vsR"></div><div class="n" id="vsN"></div><div class="a" id="vsA"></div></div>
+      <div class="charge" id="charge1"><span>Kraft</span><i></i></div>
+      <div class="charge" id="charge2"><span>Kraft</span><i></i></div>
+      <svg class="fuse" id="fuse0" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" stroke="rgba(0,0,0,.4)"/><circle class="arc" cx="18" cy="18" r="14" stroke="#66bb6a" stroke-dasharray="88 88" transform="rotate(-90 18 18)" stroke-linecap="round"/></svg>
+      <svg class="fuse" id="fuse1" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" stroke="rgba(0,0,0,.4)"/><circle class="arc" cx="18" cy="18" r="14" stroke="#66bb6a" stroke-dasharray="88 88" transform="rotate(-90 18 18)" stroke-linecap="round"/></svg>
+      <svg class="fuse" id="fuse2" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" stroke="rgba(0,0,0,.4)"/><circle class="arc" cx="18" cy="18" r="14" stroke="#66bb6a" stroke-dasharray="88 88" transform="rotate(-90 18 18)" stroke-linecap="round"/></svg>
+      <div id="pus"></div>
+      <div id="flash"></div>
+      <div id="pauseTxt">Pause<small>Tippe ▶ zum Weiterspielen</small></div>
+    </div>
+    <div id="top"><button id="bMenuTop" aria-label="Menü">🏠</button><button id="bPause" aria-label="Pause">⏸</button><button id="bCam" aria-label="Kamera wechseln">🎥</button><button id="bMusic" aria-label="Musik">🎵</button><button id="bMute" aria-label="Geräusche">🔊</button></div>
+    <div id="controls" class="one">
+      <div class="pc" id="pc1">
+        <div class="joy" id="joy1" aria-label="Joystick Spieler 1"><div class="knob"></div></div>
+        <div class="acts">
+          <button class="ctl mg" id="bM1"><i></i><span>⚡ MEGA</span></button>
+          <button class="ctl dive" id="bH1"><i id="cd1"></i><span>🤸 HECHT</span></button>
+          <button class="ctl throw" id="bT1"><span>💣 WERFEN</span></button>
+        </div>
+      </div>
+      <div class="pc" id="pc2">
+        <div class="acts">
+          <button class="ctl mg" id="bM2"><i></i><span>⚡ MEGA</span></button>
+          <button class="ctl dive" id="bH2"><i id="cd2"></i><span>🤸 HECHT</span></button>
+          <button class="ctl throw" id="bT2"><span>💣 WERFEN</span></button>
+        </div>
+        <div class="joy" id="joy2" aria-label="Joystick Spieler 2"><div class="knob"></div></div>
+      </div>
+    </div>
+  </div>
+  <div id="hint">Tipp: Handy quer halten für ein grösseres Spielfeld</div>
+  <div id="kb">Spieler 1: W A S D · Leertaste = werfen · Shift/E = Hecht · Q = Mega &nbsp;|&nbsp; Spieler 2: Pfeile · Enter = werfen · Punkt = Hecht · Komma = Mega &nbsp;|&nbsp; C Kamera · M Musik · P Pause</div>
+</div>
+
+<div class="ov" id="menu">
+  <div class="panel">
+    <div class="mhead"><h1>💣 Bomben-Volleyball 3D</h1>
+      <button class="chip" id="profChip">👤 <span id="profName"></span> · 🐚 <span id="shellCnt"></span> · ⭐ <span id="starCnt"></span></button></div>
+    <div class="tabs" id="tabs"><button data-t="play" class="sel">🎮 Spielen</button><button data-t="figur">🧍 Figur</button><button data-t="shop">🐚 Shop</button><button data-t="miss">⭐ Missionen</button><button data-t="board">🏅 Bestenliste</button><button data-t="opt">⚙️ Optionen</button></div>
+
+    <section class="tabp" id="t-play">
+      <div class="callout" id="tutCall">Neu hier? <button class="ob sel" id="bTut">Tutorial starten</button></div>
+      <button class="btn big tour" id="bTour">🏆 Turnier</button>
+      <div class="opps" id="opps"></div>
+      <button class="btn big surv" id="bSurv">💀 Überleben</button>
+      <div class="small" id="survBest"></div>
+      <button class="btn big two" id="b2P">👥 2 Spieler auf einem Handy</button>
+      <div class="small">Nutzt Stufe, Tageszeit und Wetter von unten.</div>
+      <h2>Freies Spiel</h2>
+      <div class="row" id="diffs"><button data-d="leicht">Leicht</button><button data-d="mittel">Mittel</button><button data-d="schwer">Schwer</button></div>
+      <div id="diffInfo"></div>
+      <div class="row" id="arenas"><button data-a="tag">☀️ Mittag</button><button data-a="abend">🌅 Abend</button><button data-a="nacht">🌙 Nacht</button></div>
+      <div class="row" id="weathers"><button data-w="sonne">☀️ Sonne</button><button data-w="wind">💨 Wind</button><button data-w="regen">🌧️ Regen</button><button data-w="zufall">🎲 Zufall</button></div>
+      <div class="checks"><label class="check"><input type="checkbox" id="chkPU" checked> Power-ups</label><label class="check"><input type="checkbox" id="chkSp" checked> Spezialbomben</label><label class="check"><input type="checkbox" id="chkOb" checked> Möwe &amp; Welle</label></div>
+      <button class="btn" id="bStart">Spielen</button>
+      <details class="help"><summary>Spielanleitung</summary><ul>
+        <li><b>Bewegen:</b> Joystick ziehen – je weiter, desto schneller. Im Regen rutschst du!</li>
+        <li><b>Fangen:</b> Stell dich unter die Bombe. Ihr Schatten im Sand zeigt, wo sie ist.</li>
+        <li><b>Werfen:</b> «Werfen» halten, Kraftanzeige pendelt – im richtigen Moment loslassen. Läufst du dabei nach vorne oder hinten, fliegt die Bombe schräg.</li>
+        <li><b>Hechtsprung:</b> schneller Satz in Joystick-Richtung, ohne Richtung dorthin, wo die Bombe landet.</li>
+        <li><b>🔥 Kracher:</b> 3 Fänge hintereinander – dein nächster Wurf fliegt extra schnell.</li>
+        <li><b>⚡ Mega-Sprung:</b> Nach 10 Fängen: Bombe halten und «Mega» drücken – du springst hoch und schiesst von oben. Triffst du den Gegner, ist er K.O. und das Match gewonnen!</li>
+        <li><b>Spezialbomben:</b> ❄️ Eis friert den Fänger kurz ein · ✂️ Teilbombe teilt sich in der Luft · 🥇 Gold kostet 2 Leben.</li>
+        <li><b>Power-ups:</b> 🛡️ Schild · ⚡ Turbo · 🐢 Zeitlupe · ❤️ Extra-Leben – hinlaufen zum Einsammeln.</li>
+        <li><b>Hindernisse:</b> Die Möwe lenkt Bomben ab, die Welle bremst dich vorne im Feld.</li>
+        <li><b>Leben:</b> Du verlierst eines, wenn die Bombe in deinem Feld landet, im Netz hängt oder du ins Aus wirfst.</li>
+        <li><b>Muscheln 🐚</b> gibt es für Siege und Missionen – damit kaufst du im Shop neue Sachen.</li></ul></details>
+    </section>
+
+    <section class="tabp" id="t-figur" hidden><div id="figRows"></div></section>
+    <section class="tabp" id="t-shop" hidden><p class="small">Muscheln verdienst du mit Siegen, Turnier-Runden, Überleben und Missionen.</p><div id="shopList"></div></section>
+    <section class="tabp" id="t-miss" hidden><p class="small">Jede Mission gibt einen Stern und 10 🐚.</p><ul id="missList"></ul></section>
+    <section class="tabp" id="t-board" hidden>
+      <div class="scroll" id="board"></div>
+      <h2>Spieler</h2>
+      <div class="inrow"><input id="profNameIn" maxlength="16" aria-label="Name des aktiven Spielers"><button class="ob" id="bRename">Umbenennen</button></div>
+      <div class="inrow"><input id="newProfIn" maxlength="16" placeholder="Name" aria-label="Name für neuen Spieler"><button class="ob buy" id="bNewProf">+ Neuer Spieler</button></div>
+      <p class="small">Jeder Spieler hat eigene Figur, Muscheln, Missionen und Rekorde.</p>
+    </section>
+    <section class="tabp" id="t-opt" hidden>
+      <div class="optl">
+        <label class="check"><input type="checkbox" id="optEco"> Sparmodus (für ältere Handys)</label>
+        <label class="check"><input type="checkbox" id="optVib"> Vibration (nur Android)</label>
+        <label class="check"><input type="checkbox" id="optMusic"> Musik</label>
+        <label class="check"><input type="checkbox" id="optSound"> Geräusche</label>
+      </div>
+      <button class="btn alt" id="bTut2">Tutorial nochmal spielen</button>
+      <details class="help"><summary>Als App auf den Startbildschirm</summary>
+        <p>Hier in Claude läuft das Spiel nur mit Internet. Als eigene App (offline, mit Symbol auf dem Startbildschirm) musst du es auf GitHub Pages hochladen – das Paket dafür bekommst du von Claude. Danach im Safari «Teilen → Zum Home-Bildschirm».</p></details>
+    </section>
+  </div>
+</div>
+
+<div class="ov hidden" id="over">
+  <div class="panel">
+    <h1 id="ovTitle">Gewonnen!</h1>
+    <div class="big" id="ovScore"></div>
+    <div class="reward" id="ovReward"></div>
+    <button class="btn" id="bAgain">Nochmal</button><br>
+    <button class="btn alt" id="bMenu">Zum Menü</button>
+  </div>
+</div>
+
+<div class="ov hidden" id="nogl"><div class="panel"><h1>Hoppla</h1><p>Dein Browser unterstützt kein WebGL – die 3D-Grafik kann nicht angezeigt werden.</p></div></div>
+
+<script src="engine.js"></script>
+<script src="world.js"></script>
+<script src="game.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>
